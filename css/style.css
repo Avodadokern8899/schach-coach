@@ -34,6 +34,8 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
+/* Kein automatisches Nachscrollen des Browsers, wenn sich Inhalte ändern */
+html, body, .content, .game-view { overflow-anchor: none; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -151,7 +153,7 @@ button.link { border: none; background: none; padding: 0; color: var(--accent); 
 
 .nav { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .nav button { padding: 6px 10px; }
-.move-info { margin-top: 10px; padding: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-height: 110px; }
+.move-info { margin-top: 10px; padding: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; height: 132px; overflow-y: auto; }
 .move-info .cls { font-weight: 700; }
 
 .graph { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px; margin-bottom: 12px; }

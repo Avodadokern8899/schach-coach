@@ -175,7 +175,10 @@ function openGame(game) {
   $('.sub', node).innerHTML = `${fmtDate(game.endTime)} · ${TIME_CLASS[game.timeClass] || game.timeClass} · du spielst ${game.color === 'white' ? 'Weiß' : 'Schwarz'} · ${escapeHtml(game.opening)} · ${escapeHtml(game.howText)} · <a href="${game.url}" target="_blank" rel="noopener">auf chess.com öffnen</a>`;
 
   $('.analyse-btn', node).addEventListener('click', () => runAnalysis());
-  node.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', () => navigate(b.dataset.nav)));
+  node.querySelectorAll('[data-nav]').forEach((b) => {
+    b.addEventListener('mousedown', (e) => e.preventDefault()); // kein Fokus, kein Scrollen
+    b.addEventListener('click', () => navigate(b.dataset.nav));
+  });
 
   content.innerHTML = '';
   content.appendChild(node);
