@@ -124,8 +124,10 @@ button.link { border: none; background: none; padding: 0; color: var(--accent); 
 .progress .bar { height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
 .progress span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 600; }
 
-.game-grid { display: grid; grid-template-columns: minmax(280px, 520px) minmax(0, 1fr); gap: 20px; align-items: start; }
-.board-wrap { display: grid; grid-template-columns: 22px 1fr; gap: 6px; }
+:root { --board-size: 480px; }
+.game-grid { display: grid; grid-template-columns: calc(var(--board-size) + 28px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.board-col { position: sticky; top: 12px; }
+.board-wrap { display: grid; grid-template-columns: 22px var(--board-size); gap: 6px; }
 .evalbar { position: relative; background: #403d39; border-radius: 4px; overflow: hidden; }
 .evalfill { position: absolute; left: 0; right: 0; bottom: 0; height: 50%; background: #f5f5f5; transition: height 0.3s; }
 .evalbar.flipped .evalfill { top: 0; bottom: auto; }
@@ -134,8 +136,8 @@ button.link { border: none; background: none; padding: 0; color: var(--accent); 
 .evalbar.flipped .evaltext { bottom: auto; top: 4px; }
 .evalbar.flipped.black-better .evaltext { top: auto; bottom: 4px; }
 
-.board { display: grid; grid-template-columns: repeat(8, 1fr); aspect-ratio: 1; border-radius: 4px; overflow: hidden; user-select: none; }
-.sq { position: relative; display: grid; place-items: center; font-size: min(7.4vw, 50px); line-height: 1; }
+.board { display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); width: var(--board-size); height: var(--board-size); border-radius: 4px; overflow: hidden; user-select: none; }
+.sq { position: relative; min-width: 0; min-height: 0; overflow: hidden; display: grid; place-items: center; font-size: calc(var(--board-size) / 8 * 0.78); line-height: 1; }
 .sq.l { background: var(--sq-light); } .sq.d { background: var(--sq-dark); }
 .sq.hl::before { content: ""; position: absolute; inset: 0; background: var(--hl); }
 .sq.best::after { content: ""; position: absolute; inset: 3px; border: 3px dashed var(--best); border-radius: 4px; }
@@ -149,7 +151,7 @@ button.link { border: none; background: none; padding: 0; color: var(--accent); 
 
 .nav { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .nav button { padding: 6px 10px; }
-.move-info { margin-top: 10px; padding: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-height: 60px; }
+.move-info { margin-top: 10px; padding: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-height: 110px; }
 .move-info .cls { font-weight: 700; }
 
 .graph { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px; margin-bottom: 12px; }
@@ -168,10 +170,19 @@ button.link { border: none; background: none; padding: 0; color: var(--accent); 
 .bg-best { background: var(--best); } .bg-inaccuracy { background: var(--inaccuracy); } .bg-mistake { background: var(--mistake); } .bg-blunder { background: var(--blunder); }
 .moves .tag { font-weight: 800; font-size: 12px; }
 
+/* Brett und Infos untereinander, wenn nebeneinander kein Platz ist */
+@media (max-width: 1180px) {
+  .game-grid { grid-template-columns: minmax(0, 1fr); }
+  .board-col { position: static; width: calc(var(--board-size) + 28px); max-width: 100%; }
+}
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; }
   .sidebar { position: static; max-height: 300px; border-right: none; border-bottom: 1px solid var(--line); }
-  .game-grid { grid-template-columns: 1fr; }
+
   .content { padding: 16px; }
-  .sq { font-size: 10vw; }
+}
+
+/* Auf schmalen Bildschirmen: Brett füllt die Breite, bleibt aber quadratisch */
+@media (max-width: 560px) {
+  :root { --board-size: calc(100vw - 32px - 28px); }
 }

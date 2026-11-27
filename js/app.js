@@ -324,8 +324,8 @@ document.addEventListener('keydown', (e) => {
   if (!state.current || e.target.matches('input, select')) return;
   if (e.key === 'ArrowLeft') navigate('prev');
   else if (e.key === 'ArrowRight') navigate('next');
-  else if (e.key === 'ArrowUp') navigate('start');
-  else if (e.key === 'ArrowDown') navigate('end');
+  else if (e.key === 'Home') navigate('start');
+  else if (e.key === 'End') navigate('end');
   else return;
   e.preventDefault();
 });
@@ -365,7 +365,13 @@ function goTo(ply) {
 
   document.querySelectorAll('.moves .mv').forEach((c) => c.classList.toggle('cur', +c.dataset.ply === ply));
   const curCell = $('.moves .mv.cur');
-  if (curCell) curCell.scrollIntoView({ block: 'nearest' });
+  if (curCell) {
+    // Nur die Zugliste scrollen, nicht die ganze Seite
+    const box = $('.moves');
+    const top = curCell.offsetTop - box.offsetTop;
+    if (top < box.scrollTop) box.scrollTop = top;
+    else if (top + curCell.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = top + curCell.offsetHeight - box.clientHeight;
+  }
   const cursor = $('.graph .cursor');
   if (cursor && analysis) {
     const xPos = ((ply + 1) / Math.max(1, analysis.evals.length - 1)) * 600;
