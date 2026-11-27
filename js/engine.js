@@ -8,6 +8,7 @@ export class Engine {
       const line = typeof e.data === 'string' ? e.data : String(e.data);
       for (const fn of [...this.listeners]) fn(line);
     };
+    this._queue = Promise.resolve();
     this.ready = this._init();
   }
 
@@ -38,7 +39,14 @@ export class Engine {
   }
 
   // Bewertet eine Stellung. Ergebnis immer aus Sicht von Weiß.
-  async analyse(fen, depth = 12) {
+  // Aufrufe werden nacheinander abgearbeitet (die Engine kann nur eine Stellung gleichzeitig rechnen).
+  analyse(fen, depth = 12) {
+    const run = this._queue.then(() => this._analyse(fen, depth));
+    this._queue = run.catch(() => {});
+    return run;
+  }
+
+  async _analyse(fen, depth) {
     await this.ready;
     const whiteToMove = fen.split(' ')[1] === 'w';
     let last = null;

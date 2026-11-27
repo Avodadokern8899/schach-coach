@@ -98,7 +98,7 @@ button.link { border: none; background: none; padding: 0; color: var(--accent); 
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
 .card h3 { margin: 0 0 10px; font-size: 16px; }
-.card:first-child { grid-column: 1 / -1; }
+.overview .card:first-child { grid-column: 1 / -1; }
 .batch { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
 
 .tips { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -187,4 +187,55 @@ button.link { border: none; background: none; padding: 0; color: var(--accent); 
 /* Auf schmalen Bildschirmen: Brett füllt die Breite, bleibt aber quadratisch */
 @media (max-width: 560px) {
   :root { --board-size: calc(100vw - 32px - 28px); }
+}
+
+/* ---------- Reiter ---------- */
+.tabs { display: flex; gap: 4px; background: var(--bg); padding: 4px; border-radius: 10px; }
+.tabs button { border: none; background: none; padding: 6px 14px; border-radius: 7px; font-weight: 600; color: var(--muted); }
+.tabs button.on { background: var(--panel); color: var(--text); box-shadow: var(--shadow); }
+.seg { display: flex; gap: 4px; background: var(--panel); padding: 4px; border-radius: 10px; border: 1px solid var(--line); }
+.seg button { border: none; background: none; padding: 6px 12px; border-radius: 7px; font-weight: 600; color: var(--muted); }
+.seg button.on { background: var(--accent); color: var(--accent-text); }
+
+/* ---------- Spielbares Brett ---------- */
+.board.playable .sq { cursor: pointer; }
+.sq.sel::before { content: ""; position: absolute; inset: 0; background: rgba(20, 85, 30, 0.45); }
+.sq.target::after { content: ""; position: absolute; width: 28%; height: 28%; border-radius: 50%; background: rgba(0, 0, 0, 0.22); z-index: 2; }
+.sq.target.capture::after { width: auto; height: auto; inset: 3px; background: none; border: 5px solid rgba(0, 0, 0, 0.22); }
+.sq.good::before { content: ""; position: absolute; inset: 0; background: rgba(31, 158, 137, 0.45); }
+.sq.bad::before { content: ""; position: absolute; inset: 0; background: rgba(208, 52, 44, 0.45); }
+.bg-ok { background: var(--best); } .bg-no { background: var(--blunder); }
+.turn-ind { border-radius: 4px; border: 1px solid var(--line); }
+.turn-ind.w { background: #f5f5f5; } .turn-ind.b { background: #403d39; }
+
+.move-info.right { border-color: var(--best); background: color-mix(in srgb, var(--best) 10%, var(--panel)); }
+.move-info.wrong { border-color: var(--blunder); background: color-mix(in srgb, var(--blunder) 10%, var(--panel)); }
+.move-info.hint { border-color: var(--inaccuracy); background: color-mix(in srgb, var(--inaccuracy) 10%, var(--panel)); }
+
+.info-col { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.info-col > * { margin-bottom: 0; }
+.task-title { font-size: 18px; font-weight: 700; }
+.card p { margin: 0 0 8px; }
+.card h4 { margin: 14px 0 6px; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.empty-state { max-width: 640px; }
+.mode-view .kpis { margin-bottom: 16px; }
+.section-title { margin: 24px 0 12px; font-size: 18px; }
+.table-scroll { overflow-x: auto; }
+.eco { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: var(--bg); color: var(--muted); font-variant-numeric: tabular-nums; }
+.pill { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+.pill.ok { background: color-mix(in srgb, var(--best) 18%, transparent); color: var(--best); }
+.pill.off { background: color-mix(in srgb, var(--mistake) 18%, transparent); color: var(--mistake); }
+.clickable { cursor: pointer; }
+.clickable:hover { background: var(--bg); }
+.dev-list, .book-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.dev-list li { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.book-list li { padding: 6px 8px; border-radius: 6px; }
+.small { font-size: 13px; }
+.th-cards .card:first-child { grid-column: auto; }
+.drill-score .kpi { display: inline-block; }
+
+@media (max-width: 700px) {
+  .top { flex-direction: column; align-items: stretch; }
+  .tabs { justify-content: stretch; }
+  .tabs button { flex: 1; }
 }

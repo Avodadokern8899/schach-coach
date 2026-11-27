@@ -3,30 +3,23 @@ import { Engine } from './engine.js';
 import { fetchRecentGames } from './chesscom.js';
 import { analyseGame, summarise, CLASS, formatEval, winPercent } from './analysis.js';
 import { gameTips, overviewStats, overviewTips } from './tips.js';
+import { renderBoard } from './board.js';
+import { renderTraining } from './training.js';
+import { renderTheory } from './theory.js';
+import { $, escapeHtml, fmtDate, kpi, store, analysisKey, getAnalysis } from './util.js';
 
-const $ = (sel, root = document) => root.querySelector(sel);
 const content = $('#content');
 
 const state = {
   username: '',
   games: [],
   filter: '',
-  current: null, // { game, analysis, ply, view }
+  current: null, // { game, analysis, ply }
+  view: 'overview', // overview | training | theory | game
   engine: null,
   busy: false,
 };
 
-// ---------- Speicher (nur Bequemlichkeit, App funktioniert auch ohne) ----------
-const store = {
-  get(key) {
-    try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
-  },
-  set(key, val) {
-    try { localStorage.setItem(key, JSON.stringify(val)); } catch { /* voll oder gesperrt */ }
-  },
-};
-const analysisKey = (id) => 'sc-analysis:' + id;
-const getAnalysis = (game) => store.get(analysisKey(game.id));
 
 function engine() {
   if (!state.engine) state.engine = new Engine();
@@ -44,9 +37,28 @@ $('#load-form').addEventListener('submit', async (e) => {
 $('#filter-class').addEventListener('change', (e) => {
   state.filter = e.target.value;
   renderList();
-  if (!state.current) renderOverview();
+  if (state.view !== 'game') showView(state.view);
 });
-$('#show-overview').addEventListener('click', () => renderOverview());
+
+// ---------- Ansichten (Reiter) ----------
+document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
+
+function showView(view) {
+  state.view = view;
+  if (view !== 'game') state.current = null;
+  document.querySelectorAll('[data-view]').forEach((b) => b.classList.toggle('on', b.dataset.view === view));
+  if (view !== 'game') document.querySelectorAll('.game-list li.active').forEach((li) => li.classList.remove('active'));
+  if (view === 'game') return;
+  if (!state.games.length) {
+    content.innerHTML = '<div class="welcome"><h1>Erst Partien laden</h1><p>Gib oben deinen chess.com-Namen ein und klicke auf „Partien laden“.</p></div>';
+    return;
+  }
+  const ctx = { content, games: visibleGames, engine, onAnalyse: batchAnalyse, openGame };
+  if (view === 'overview') renderOverview();
+  else if (view === 'training') renderTraining(ctx);
+  else if (view === 'theory') renderTheory(ctx);
+  window.scrollTo({ top: 0 });
+}
 
 async function loadGames(name, months) {
   state.username = name;
@@ -61,7 +73,7 @@ async function loadGames(name, months) {
   if (!state.games.length) {
     content.innerHTML = '<div class="welcome"><p>Keine Partien in diesem Zeitraum gefunden.</p></div>';
   } else {
-    renderOverview();
+    showView(state.view === 'game' ? 'overview' : state.view);
   }
   renderList();
 }
@@ -98,8 +110,6 @@ function renderList() {
 
 // ---------- Übersicht ----------
 function renderOverview() {
-  state.current = null;
-  document.querySelectorAll('.game-list li.active').forEach((li) => li.classList.remove('active'));
   const games = visibleGames();
   if (!games.length) return;
   const node = $('#tpl-overview').content.cloneNode(true);
@@ -157,11 +167,13 @@ async function batchAnalyse(btn, status) {
   } finally {
     state.busy = false;
   }
-  if (!state.current) renderOverview();
+  if (state.view !== 'game') showView(state.view);
 }
 
 // ---------- Partieansicht ----------
-function openGame(game) {
+function openGame(game, startPly) {
+  state.view = 'game';
+  document.querySelectorAll('[data-view]').forEach((b) => b.classList.remove('on'));
   const analysis = getAnalysis(game);
   const chess = new Chess();
   chess.loadPgn(game.pgn);
@@ -184,7 +196,7 @@ function openGame(game) {
   content.appendChild(node);
   if (analysis) $('.analyse-btn').textContent = 'Neu analysieren';
   renderGamePanels();
-  goTo(history.length - 1);
+  goTo(startPly !== undefined ? startPly : history.length - 1);
   window.scrollTo({ top: 0 });
 }
 
@@ -344,7 +356,7 @@ function goTo(ply) {
 
   const highlights = mv ? [mv.from, mv.to] : [];
   const best = am && am.bestUci && am.cls !== 'best' && am.cls !== 'good' ? [am.bestUci.slice(0, 2), am.bestUci.slice(2, 4)] : [];
-  renderBoard($('.board'), fen, flipped, highlights, best, am);
+  renderBoard($('.board'), fen, flipped, { highlights, best, mark: am && am.cls !== 'good' ? { sq: am.to, cls: am.cls } : null });
 
   // Bewertungsbalken
   const ev = analysis ? analysis.evals[ply + 1] : null;
@@ -398,38 +410,7 @@ function describeMove(am, game) {
   return html;
 }
 
-const GLYPH = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
-
-function renderBoard(el, fen, flipped, highlights, best, am) {
-  const c = new Chess(fen);
-  const board = c.board();
-  const files = 'abcdefgh';
-  let html = '';
-  for (let r = 0; r < 8; r++) {
-    for (let f = 0; f < 8; f++) {
-      const rr = flipped ? 7 - r : r;
-      const ff = flipped ? 7 - f : f;
-      const sqName = files[ff] + (8 - rr);
-      const piece = board[rr][ff];
-      const light = (rr + ff) % 2 === 0;
-      const cls = ['sq', light ? 'l' : 'd'];
-      if (highlights.includes(sqName)) cls.push('hl');
-      if (best.includes(sqName)) cls.push('best');
-      let inner = piece ? `<span class="pc ${piece.color}">${GLYPH[piece.type]}&#xFE0E;</span>` : '';
-      if (r === 7) inner += `<span class="coord f">${files[ff]}</span>`;
-      if (f === 0) inner += `<span class="coord r">${8 - rr}</span>`;
-      if (am && sqName === am.to && CLASS[am.cls].short && am.cls !== 'best') inner += `<span class="mark bg-${am.cls}">${CLASS[am.cls].short}</span>`;
-      if (am && sqName === am.to && am.cls === 'best') inner += `<span class="mark bg-best">★</span>`;
-      html += `<div class="${cls.join(' ')}">${inner}</div>`;
-    }
-  }
-  el.innerHTML = html;
-}
-
 // ---------- Helfer ----------
-function kpi(v, l, cls = '') {
-  return `<div class="kpi"><div class="v ${cls}">${v}</div><div class="l">${l}</div></div>`;
-}
 function wdl(v) {
   const p = (n) => (n / v.total) * 100 + '%';
   return `<div class="wdl"><span style="width:${p(v.win)}"></span><span style="width:${p(v.draw)}"></span><span style="width:${p(v.loss)}"></span></div>`;
@@ -437,16 +418,10 @@ function wdl(v) {
 function renderTips(tips) {
   return tips.map((t) => `<li class="${t.kind}"${t.ply !== undefined ? ` data-ply="${t.ply}"` : ''}>${t.text}</li>`).join('');
 }
-function fmtDate(ms) {
-  return new Date(ms).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
-}
 function fmtClock(s) {
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return `${m}:${String(sec).padStart(2, '0')}`;
-}
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }
 
 // Zuletzt benutzten Namen vorausfüllen
